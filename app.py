@@ -16,6 +16,8 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+TRUE_FACE_COLLECTION_ID = "ahBzfmNodWlzcGRldGVjdG9ychcLEgpDb2xsZWN0aW9uGICAgMCB2L8IDA"
+
 sid_to_uid_response = {}
 
 @app.route('/info', methods=['GET'])
@@ -28,21 +30,65 @@ def getinfo():
 def get():
     body = request.get_json()
     image = body['image']
-    url = "https://api.chui.ai/v1/match"
+    url = "https://api.chui.ai/v1/identify"
     data = {
         "img": image,
-        "id": "ahBzfmNodWlzcGRldGVjdG9ychcLEgpDb2xsZWN0aW9uGICAgMCB2L8IDA"
+        "collection_id": TRUE_FACE_COLLECTION_ID
     }
-    match_response = post(url, data=dumps(data), headers=HEADERS).json()
-    match_data = match_response.get("data", None)
+    identify_response = post(url, data=dumps(data), headers=HEADERS).json()
+    identify_data = identify_response.get("data", None)
 
-    if not match_data:
-        return jsonify({"authenticated": "false"})
+    if not identify_data:
+        return jsonify({"user_found": "false"})
     else:
-        if match_data["emb0_match"] is False:
-            return jsonify({"authenticated": "false"})
+        if identify_data["success"] is False:
+            return jsonify({"user_found": "false"})
 
-    return jsonify({"authenticated": "true"})
+    return jsonify({"user_found": "true"})
+
+@app.route('/register', methods=['POST'])
+@cross_origin()
+def registerUser():
+    body = request.get_json()
+    if 'image0' not in body or 'image1' not in body or 'image2' not in body:
+        return jsonify({"error": "Missing image parameters (3 is needed)"})
+    if 'name' not in body:
+        return jsonify({"error": "Missing name parameter"})
+    image0 = body['image0']
+    image1 = body['image1']
+    image2 = body['image2']
+    # image3 = body['image3']
+    # image4 = body['image4']
+    name = body['name']
+    url = "https://api.chui.ai/v1/enroll"
+    data = {
+        "img0": image0,
+        "img1": image1,
+        "img2": image2,
+        # "img3": image3,
+        # "img4": image4,
+        "name": name,
+        "collection_id": TRUE_FACE_COLLECTION_ID
+    }
+    register_response = post(url, data=dumps(data), headers=HEADERS).json()
+    register_success = register_response.get("success", False)
+
+    # if not identify_data:
+    #     return jsonify({"user_found": "false"})
+    # else:
+    #     if identify_data["success"] is False:
+    #         return jsonify({"user_found": "false"})
+
+    url = "https://api.chui.ai/v1/train"
+    if register_success:
+        train_response = post(url, data=dumps({ "collection_id": TRUE_FACE_COLLECTION_ID }), headers=HEADERS).json()
+        train_success = train_response.get("success", False)
+        if train_success:
+            return jsonify({"success": True, "raw_response": train_response})
+        else:
+            return jsonify({"success": False, "raw_response": train_response})
+    else:
+        return jsonify({"success": False, "raw_response": register_response})
 
 def decode_base64(data):
     """Decode base64, padding being optional.
