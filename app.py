@@ -1,3 +1,4 @@
+from datetime import datetime
 from google.cloud import vision
 from google.cloud.vision import types
 from flask import Flask, request, jsonify
@@ -6,6 +7,10 @@ from json import dumps
 from base64 import b64encode, b64decode
 from requests import post
 from os import environ
+
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -19,6 +24,11 @@ HEADERS = {
 TRUE_FACE_COLLECTION_ID = "ahBzfmNodWlzcGRldGVjdG9ychcLEgpDb2xsZWN0aW9uGICAgMCB2L8IDA"
 
 sid_to_uid_response = {}
+
+firebase_cred = credentials.Certificate("./secret/firebase-adminsdk.json")
+firebase_app = firebase_admin.initialize_app(firebase_cred, {
+    'databaseURL': 'https://mehsurvey-29210.firebaseio.com'
+})
 
 @app.route('/info', methods=['GET'])
 @cross_origin()
@@ -90,6 +100,8 @@ def registerUser():
     else:
         return jsonify({"success": False, "raw_response": register_response})
 
+
+
 def decode_base64(data):
     """Decode base64, padding being optional.
 
@@ -123,31 +135,77 @@ def get_emotion():
     print response
     return jsonify(response)
 
+# Survey Responses Endpoints
 
-@app.route("/store", methods=['POST'])
+@app.route("/surveys/<survey_id>/responses", methods=['POST'])
 @cross_origin()
-def store():
+def saveSurveyResponse(survey_id):
     body = request.get_json()
-    sid = body["survey_id"]
     user_id = body["user_id"]
     responses = body["responses"]
-    image = body["image"]
+    responsesRef = db.reference('surveys/' + str(survey_id) + '/responses/' + str(user_id))
+    responsesRef.set({
+        "survey_id": survey_id,
+        "user_id": user_id,
+        "responses": responses,
+        "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
+    return jsonify(responsesRef.get())
 
-    sid_to_uid_response[sid] = {
-        user_id: {
-            "responses": responses,
-            "image": image
-        }
-    }
-    return jsonify({ "survey_id": sid, "user_id": user_id, "responses": responses })
-
-
-@app.route("/fetch", methods=['POST'])
+@app.route("/surveys/<survey_id>/responses", methods=['GET'])
 @cross_origin()
-def fetch_by_sid():
+def getSurveyResponse(survey_id):
+    ref = db.reference('surveys/' + str(survey_id) + '/responses')
+    val = ref.get()
+    if val is None:
+        return jsonify({})
+    else:
+        return jsonify(ref.get())
+
+@app.route("/surveys/<survey_id>/responses", methods=['DELETE'])
+@cross_origin()
+def clearSurveyResponse(survey_id):
+    ref = db.reference('surveys/' + str(survey_id) + '/responses')
+    ref.set({})
+    return jsonify({ "success": True })
+
+# Survey CRUD
+
+@app.route("/surveys", methods=['GET'])
+@cross_origin()
+def getSurveys():
+    refs = db.reference('surveys')
+    val = refs.get()
+    if val is None:
+        return jsonify({})
+    else:
+        return jsonify(refs.get())
+
+@app.route("/surveys/<survey_id>", methods=['GET'])
+@cross_origin()
+def getSurvey(survey_id):
+    ref = db.reference('surveys/' + str(survey_id) + '/survey')
+    val = ref.get()
+    if val is None:
+        return jsonify({})
+    else:
+        return jsonify(ref.get())
+
+@app.route("/surveys", methods=['POST'])
+@cross_origin()
+def createSurvey():
     body = request.get_json()
-    sid = body["survey_id"]
-    return jsonify(sid_to_uid_response[sid])
+    surveyRefs = db.reference('surveys')
+    ref = surveyRefs.push()
+    ref.set(body)
+    return jsonify(ref.get())
+
+@app.route("/surveys/<survey_id>", methods=['DELETE'])
+@cross_origin()
+def deleteSurvey(survey_id):
+    ref = db.reference('surveys/' + str(survey_id))
+    ref.set({})
+    return jsonify({ "success": True })
 
 if __name__ == '__main__':
     app.run(port='5002')
