@@ -1,14 +1,18 @@
 # trueface-ai-hackathon-server
 Python Server
 
-Steps to run server locally
+## Run locally
 Clone the repo and change into that directory.
 
 Run these commands in your terminal:
 ```sh
 export TRUE_FACE_API_KEY={YOUR_API_KEY_HERE}
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/credentials-key.json
 pip install virtualenv
-source env/bin/activate
+virtualenv ./env
+source ./env/bin/activate
+pip install -r requirements.txt
+python app.py
 ```
 
 ## Run on heroku
