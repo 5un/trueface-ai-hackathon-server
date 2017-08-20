@@ -36,7 +36,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/Users/GabrielCerteza/Projects/truefaceai-hackathon/env"
+set -gx VIRTUAL_ENV "/Users/Sun/Projects/91_TruefaceAI_Hackathon/Development/trueface-ai-hackathon-server/env"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

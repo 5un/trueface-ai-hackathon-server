@@ -15,16 +15,21 @@ HEADERS = {
 
 sid_to_uid_response = {}
 
+@app.route('/info', methods=['GET'])
+def getinfo():
+    return jsonify({"version": "0.0.1"})
+
 @app.route('/authenticate', methods=['POST'])
 def get():
-    image = request.form["image"]
+    body = request.get_json()
+    image = body['image']
     url = "https://api.chui.ai/v1/match"
     data = {
         "img": image,
-        "id": "ahBzfmNodWlzcGRldGVjdG9ychcLEgpFbnJvbGxtZW50GICAgMD-_v0IDA"
+        "id": "ahBzfmNodWlzcGRldGVjdG9ychcLEgpDb2xsZWN0aW9uGICAgMCB2L8IDA"
     }
     match_response = post(url, data=dumps(data), headers=HEADERS).json()
-    match_data = match_response["data"]
+    match_data = match_response.get("data", None)
 
     if not match_data:
         return jsonify({"authenticated": "false"})
@@ -48,7 +53,8 @@ def decode_base64(data):
 
 @app.route("/emotion", methods=['POST'])
 def get_emotion():
-    image_base64 = request.form["image"]
+    body = request.get_json()
+    image_base64 = body['image']
     client = vision.ImageAnnotatorClient()
 
     content = decode_base64(image_base64)
@@ -68,10 +74,11 @@ def get_emotion():
 
 @app.route("/store", methods=['POST'])
 def store():
-    sid = request.form["survey_id"]
-    user_id = request.form["user_id"]
-    responses = request.form["responses"]
-    image = request.form["image"]
+    body = request.get_json()
+    sid = body["survey_id"]
+    user_id = body["user_id"]
+    responses = body["responses"]
+    image = body["image"]
 
     sid_to_uid_response[sid] = {
         user_id: {
@@ -79,12 +86,13 @@ def store():
             "image": image
         }
     }
-    return jsonify({})
+    return jsonify({ "survey_id": sid, "user_id": user_id, "responses": responses })
 
 
 @app.route("/fetch", methods=['POST'])
 def fetch_by_sid():
-    sid = request.form["survey_id"]
+    body = request.get_json()
+    sid = body["survey_id"]
     return jsonify(sid_to_uid_response[sid])
 
 if __name__ == '__main__':

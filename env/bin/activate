@@ -40,7 +40,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/GabrielCerteza/Projects/truefaceai-hackathon/env"
+VIRTUAL_ENV="/Users/Sun/Projects/91_TruefaceAI_Hackathon/Development/trueface-ai-hackathon-server/env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
