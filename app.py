@@ -1,12 +1,15 @@
 from google.cloud import vision
 from google.cloud.vision import types
 from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
 from json import dumps
 from base64 import b64encode, b64decode
 from requests import post
 from os import environ
 
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 HEADERS = {
     "x-api-key": environ.get("TRUE_FACE_API_KEY"),
@@ -16,10 +19,12 @@ HEADERS = {
 sid_to_uid_response = {}
 
 @app.route('/info', methods=['GET'])
+@cross_origin()
 def getinfo():
     return jsonify({"version": "0.0.1"})
 
 @app.route('/authenticate', methods=['POST'])
+@cross_origin()
 def get():
     body = request.get_json()
     image = body['image']
@@ -52,6 +57,7 @@ def decode_base64(data):
     return b64decode(data)
 
 @app.route("/emotion", methods=['POST'])
+@cross_origin()
 def get_emotion():
     body = request.get_json()
     image_base64 = body['image']
@@ -73,6 +79,7 @@ def get_emotion():
 
 
 @app.route("/store", methods=['POST'])
+@cross_origin()
 def store():
     body = request.get_json()
     sid = body["survey_id"]
@@ -90,6 +97,7 @@ def store():
 
 
 @app.route("/fetch", methods=['POST'])
+@cross_origin()
 def fetch_by_sid():
     body = request.get_json()
     sid = body["survey_id"]
